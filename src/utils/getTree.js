@@ -1,39 +1,42 @@
-
-export function getTree( data, attrs) {
-    // console.log("data:", data);
-    const getLevels = (attr) => {
-        const attrArray = data.map(d => d[attr]);
-        // console.log("attrArray:", attrArray);
-        const levels = attrArray.filter( (d, idx) => attrArray.indexOf(d) === idx).sort();
-        return levels.map( d => {return {"name": d, "attr": attr}});
+export function getTree(data, attributes) {
+    if (attributes.length === 0) {
+      return [];
+    }
+  
+    const attr = attributes[0];
+  
+    // Label mapping for better display
+    const labelMap = {
+      heart_disease: { "0": "Heart Disease: No", "1": "Heart Disease: Yes" },
+      hypertension: { "0": "Hypertension: No", "1": "Hypertension: Yes" },
+      ever_married: { "Yes": "Ever Married: Yes", "No": "Ever Married: No" },
+      gender: { "Male": "Gender: Male", "Female": "Gender: Female", "Other": "Gender: Other" },
+      stroke: { "0": "Stroke: No", "1": "Stroke: Yes" },
     };
-    const levels = attrs.map( d => getLevels(d));
-    // console.log("levels:", levels);
-    const getJsonTree = function( data, levels ) {
-        let itemArr = [];
-        if(levels.length === 0) {
-            //itemArr.push(data);
-            return null;
-        }
-        const currentLevel = levels[0];
-        for (let i = 0; i < currentLevel.length; i++) {
-            let node = currentLevel[i];
-            let newData = data.filter(d => d[currentLevel[0].attr] === currentLevel[i].name)
-            if (newData.length > 0){
-                let newNode = {};
-                newNode.points = newData;
-                newNode.name = node.name;
-                newNode.attr = node.attr;
-                newNode.value = newData.length; //number of patients
-                // newNode.value = newData.length/data.length; // portion of patients
-                let children = getJsonTree(newData, levels.slice(1));
-                if (children) {
-                    newNode.children = children;
-                }
-                itemArr.push(newNode);
-            }
-        }
-        return itemArr;
-    };
-    return getJsonTree(data, levels);
-}
+  
+    const groups = {};
+    data.forEach(d => {
+      const rawValue = d[attr];
+      const label = labelMap[attr]?.[rawValue] ?? `${attr}: ${rawValue}`;
+      if (!groups[label]) {
+        groups[label] = [];
+      }
+      groups[label].push(d);
+    });
+  
+    const children = Object.entries(groups).map(([label, records]) => {
+      if (attributes.length === 1) {
+        return {
+          name: label,
+          value: records.length
+        };
+      } else {
+        return {
+          name: label,
+          children: getTree(records, attributes.slice(1))
+        };
+      }
+    });
+  
+    return children;
+  } 
